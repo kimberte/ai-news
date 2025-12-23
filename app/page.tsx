@@ -14,7 +14,11 @@ export default function HomePage() {
         <h1>AI News</h1>
 
         <div className={styles.filters}>
-          <select value={category} onChange={e => setCategory(e.target.value)}>
+          <select
+            className={styles.select}
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+          >
             <option value="general">General</option>
             <option value="business">Business</option>
             <option value="technology">Technology</option>
@@ -22,7 +26,11 @@ export default function HomePage() {
             <option value="sports">Sports</option>
           </select>
 
-          <select value={country} onChange={e => setCountry(e.target.value)}>
+          <select
+            className={styles.select}
+            value={country}
+            onChange={e => setCountry(e.target.value)}
+          >
             <option value="us">US</option>
             <option value="ca">Canada</option>
             <option value="gb">UK</option>

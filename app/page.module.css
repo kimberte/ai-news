@@ -16,7 +16,7 @@
   gap: 1rem;
 }
 
-select {
+.select {
   padding: 0.5rem;
   font-size: 0.95rem;
 }
