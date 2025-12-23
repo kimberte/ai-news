@@ -1,27 +1,29 @@
 import { NextResponse } from 'next/server';
-import { fetchNews } from '../../../../lib/newsProviders';
+import { fetchNews } from '../../../lib/newsProviders';
 
 export const runtime = 'nodejs';
 
 export async function GET() {
-  console.log('🚀 Cron started:', new Date().toISOString());
+  try {
+    console.log('✅ Cron job ran at:', new Date().toISOString());
 
-  const articles = await fetchNews('general', 'us', 5);
+    const articles = await fetchNews();
 
-  console.log('📰 Articles fetched count:', articles.length);
+    console.log('📰 Articles fetched:', articles.length);
+    articles.forEach((a, i) =>
+      console.log(`${i + 1}. ${a.title}`)
+    );
 
-  if (articles.length > 0) {
-    articles.forEach((article, index) => {
-      console.log(`📝 Article ${index + 1}: ${article.title}`);
+    return NextResponse.json({
+      success: true,
+      count: articles.length,
     });
-  } else {
-    console.log('⚠️ No articles returned');
+  } catch (error) {
+    console.error('❌ Cron failed:', error);
+
+    return NextResponse.json(
+      { success: false },
+      { status: 500 }
+    );
   }
-
-  console.log('✅ Cron finished');
-
-  return NextResponse.json({
-    success: true,
-    count: articles.length,
-  });
 }
