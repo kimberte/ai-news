@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { fetchNews } from '../../../lib/newsProviders';
 
+// 👇 THIS IS THE KEY FIX
+export const runtime = 'nodejs';
+
 export async function GET() {
-  const start = new Date().toISOString();
-  console.log('🚀 Cron started:', start);
+  console.log('🚀 Cron started:', new Date().toISOString());
 
   const articles = await fetchNews('general', 'us', 5);
 
@@ -11,7 +13,7 @@ export async function GET() {
 
   if (articles.length > 0) {
     articles.forEach((article, index) => {
-      console.log(`📝 Article ${index + 1}:`, article.title);
+      console.log(`📝 Article ${index + 1}: ${article.title}`);
     });
   } else {
     console.log('⚠️ No articles returned');
