@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchNews } from '@/lib/newsProviders';
+import { fetchNews } from '../../../../lib/newsProviders';
 
 export const runtime = 'nodejs';
 
