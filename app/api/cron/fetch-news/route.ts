@@ -17,10 +17,13 @@ export async function GET() {
 
     const articles: Article[] = await fetchNews();
 
-    console.log('📰 Articles fetched:', articles.length);
-    articles.forEach((a: Article, i: number) => {
-      console.log(`${i + 1}. ${a.title}`);
-    });
+    console.log('🧪 fetchNews returned:', articles);
+
+    console.log('📰 Articles fetched count:', articles.length);
+
+    if (articles.length > 0) {
+      console.log('📰 First article title:', articles[0].title);
+    }
 
     return NextResponse.json({
       success: true,
