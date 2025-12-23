@@ -7,11 +7,11 @@ import styles from './NewsList.module.css'
 export interface Article {
   id: number
   title: string
-  description: string
-  content: string
+  description: string | null
+  content: string | null
   source: string
   url: string
-  publishedAt: string
+  published_at: string
   category: string
   country: string
 }
@@ -24,22 +24,27 @@ interface Props {
 export default function NewsList({ category, country }: Props) {
   const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchArticles = async () => {
       setLoading(true)
+      setError(null)
 
       const { data, error } = await supabase
-        .from<Article, 'news'>('news')
+        .from('news')
         .select('*')
         .eq('category', category)
         .eq('country', country)
-        .order('publishedAt', { ascending: false })
+        .order('published_at', { ascending: false })
+        .limit(20)
 
       if (error) {
-        console.error('Error fetching news:', error)
+        console.error(error)
+        setError('Failed to load news')
+        setArticles([])
       } else {
-        setArticles(data || [])
+        setArticles((data as Article[]) || [])
       }
 
       setLoading(false)
@@ -48,17 +53,28 @@ export default function NewsList({ category, country }: Props) {
     fetchArticles()
   }, [category, country])
 
-  if (loading) return <p className={styles.loading}>Loading news...</p>
+  if (loading) {
+    return <p>Loading news…</p>
+  }
+
+  if (error) {
+    return <p>{error}</p>
+  }
+
+  if (articles.length === 0) {
+    return <p>No articles found.</p>
+  }
 
   return (
     <div className={styles.list}>
       {articles.map(article => (
         <article key={article.id} className={styles.card}>
-          <h2 className={styles.title}>{article.title}</h2>
-          <p className={styles.meta}>
-            {article.source} · {new Date(article.publishedAt).toLocaleDateString()}
-          </p>
-          <p className={styles.description}>{article.description}</p>
+          <h2>{article.title}</h2>
+
+          {article.description && (
+            <p className={styles.description}>{article.description}</p>
+          )}
+
           <a
             href={article.url}
             target="_blank"
