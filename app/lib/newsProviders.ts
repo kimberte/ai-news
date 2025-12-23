@@ -1,32 +1,51 @@
-export async function fetchNews(category = 'general', country = 'us', pageSize = 5) {
+type Article = {
+  title: string;
+  description: string;
+  content: string;
+  source: string;
+  url: string;
+  publishedAt: string;
+  category: string;
+  country: string;
+};
+
+export async function fetchNews(
+  category = 'general',
+  country = 'us',
+  pageSize = 5
+): Promise<Article[]> {
   try {
-    // Debug log
-    console.log('🔑 NEWS_API_KEY present:', !!process.env.NEWS_API_KEY);
+    console.log('🔹 Fetching news with:', {
+      category,
+      country,
+      pageSize,
+      key: process.env.NEWS_API_KEY?.slice(0, 5) + '...', // partial log
+    });
 
     const res = await fetch(
-      `https://newsapi.org/v2/top-headlines?category=${category}&country=${country}&pageSize=${pageSize}&apiKey=${process.env.NEWS_API_KEY}`
+      `https://newsapi.org/v2/top-headlines?category=${category}&country=${country}&pageSize=${pageSize}`,
+      {
+        headers: { 'X-Api-Key': process.env.NEWS_API_KEY! },
+      }
     );
 
     const data = await res.json();
 
-    console.log('Raw response from NewsAPI:', data);
+    console.log('🔹 Raw response from NewsAPI:', data);
 
-    if (!data.articles || !Array.isArray(data.articles)) {
-      return [];
-    }
-
-    return data.articles.map((article: any) => ({
-      title: article.title ?? 'No title',
-      description: article.description ?? '',
-      content: article.content ?? '',
-      source: article.source?.name ?? 'Unknown',
-      url: article.url ?? '',
-      publishedAt: article.publishedAt ?? new Date().toISOString(),
+    // Map source object to string for simplicity
+    return (data.articles ?? []).map((a: any) => ({
+      title: a.title,
+      description: a.description ?? '',
+      content: a.content ?? '',
+      source: a.source?.name ?? 'Unknown',
+      url: a.url,
+      publishedAt: a.publishedAt,
       category,
-      country
+      country,
     }));
-  } catch (err) {
-    console.error('Error fetching news:', err);
+  } catch (error) {
+    console.error('❌ fetchNews failed:', error);
     return [];
   }
 }
