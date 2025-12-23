@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchNews } from '../../../lib/newsProviders';
+import { supabase } from '../../../lib/supabaseClient';
 
 export const runtime = 'nodejs';
 
@@ -18,13 +19,33 @@ export async function GET() {
   try {
     console.log('✅ Cron job ran at:', new Date().toISOString());
 
-    // Fetch articles
     const articles: Article[] = await fetchNews();
 
-    console.log('🧪 fetchNews returned:', articles);
-    console.log('📰 Articles fetched count:', articles.length);
-    if (articles.length > 0) {
-      console.log('📰 First article title:', articles[0].title);
+    console.log('🧪 Articles fetched:', articles.length);
+
+    // Insert or upsert articles
+    for (const article of articles) {
+      const { data, error } = await supabase
+        .from('news')
+        .upsert(
+          {
+            title: article.title,
+            description: article.description,
+            content: article.content,
+            source: article.source,
+            url: article.url,
+            publishedAt: article.publishedAt,
+            category: article.category,
+            country: article.country,
+          },
+          { onConflict: ['url'] } // Avoid duplicates
+        );
+
+      if (error) {
+        console.error('❌ Supabase insert error:', error);
+      } else {
+        console.log('✅ Supabase inserted/updated:', article.title);
+      }
     }
 
     return NextResponse.json({
@@ -34,9 +55,6 @@ export async function GET() {
   } catch (error) {
     console.error('❌ Cron failed:', error);
 
-    return NextResponse.json(
-      { success: false },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false }, { status: 500 });
   }
 }
