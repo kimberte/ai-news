@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import styles from './NewsList.module.css'
 
 export interface Article {
+  id: number
   title: string
   description: string
   content: string
@@ -15,52 +16,58 @@ export interface Article {
   country: string
 }
 
-interface NewsListProps {
+interface Props {
   category: string
   country: string
 }
 
-export default function NewsList({ category, country }: NewsListProps) {
+export default function NewsList({ category, country }: Props) {
   const [articles, setArticles] = useState<Article[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchNews() {
+    const fetchArticles = async () => {
       setLoading(true)
+
       const { data, error } = await supabase
-        .from<Article>('news')
+        .from<Article, 'news'>('news')
         .select('*')
         .eq('category', category)
         .eq('country', country)
+        .order('publishedAt', { ascending: false })
 
       if (error) {
-        console.error('Supabase fetch error:', error)
+        console.error('Error fetching news:', error)
       } else {
         setArticles(data || [])
       }
+
       setLoading(false)
     }
 
-    fetchNews()
+    fetchArticles()
   }, [category, country])
 
-  if (loading) return <p>Loading news...</p>
-  if (!articles.length) return <p>No articles found.</p>
+  if (loading) return <p className={styles.loading}>Loading news...</p>
 
   return (
-    <div className={styles.newsList}>
-      {articles.map((article, index) => (
-        <div key={index} className={styles.newsItem}>
-          <div className={styles.newsTitle}>
-            <a href={article.url} target="_blank" rel="noopener noreferrer">
-              {article.title}
-            </a>
-          </div>
-          <div className={styles.newsDescription}>{article.description}</div>
-          <div className={styles.newsMeta}>
-            {article.source} • {new Date(article.publishedAt).toLocaleDateString()}
-          </div>
-        </div>
+    <div className={styles.list}>
+      {articles.map(article => (
+        <article key={article.id} className={styles.card}>
+          <h2 className={styles.title}>{article.title}</h2>
+          <p className={styles.meta}>
+            {article.source} · {new Date(article.publishedAt).toLocaleDateString()}
+          </p>
+          <p className={styles.description}>{article.description}</p>
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.link}
+          >
+            Read full article →
+          </a>
+        </article>
       ))}
     </div>
   )
