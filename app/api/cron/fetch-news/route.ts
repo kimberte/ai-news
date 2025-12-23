@@ -3,16 +3,24 @@ import { fetchNews } from '../../../lib/newsProviders';
 
 export const runtime = 'nodejs';
 
+type Article = {
+  title: string;
+  url: string;
+  source?: {
+    name?: string;
+  };
+};
+
 export async function GET() {
   try {
     console.log('✅ Cron job ran at:', new Date().toISOString());
 
-    const articles = await fetchNews();
+    const articles: Article[] = await fetchNews();
 
     console.log('📰 Articles fetched:', articles.length);
-    articles.forEach((a, i) =>
-      console.log(`${i + 1}. ${a.title}`)
-    );
+    articles.forEach((a: Article, i: number) => {
+      console.log(`${i + 1}. ${a.title}`);
+    });
 
     return NextResponse.json({
       success: true,
