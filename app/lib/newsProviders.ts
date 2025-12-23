@@ -1,7 +1,7 @@
 export async function fetchNews(category = 'general', country = 'us', pageSize = 5) {
   try {
     // Debug log
-    console.log('Fetching news with key:', process.env.NEWS_API_KEY);
+    console.log('🔑 NEWS_API_KEY present:', !!process.env.NEWS_API_KEY);
 
     const res = await fetch(
       `https://newsapi.org/v2/top-headlines?category=${category}&country=${country}&pageSize=${pageSize}&apiKey=${process.env.NEWS_API_KEY}`

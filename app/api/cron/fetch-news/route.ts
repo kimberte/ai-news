@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { fetchNews } from '../../../lib/newsProviders';
+import { fetchNews } from '@/lib/newsProviders';
 
-// 👇 THIS IS THE KEY FIX
 export const runtime = 'nodejs';
 
 export async function GET() {
