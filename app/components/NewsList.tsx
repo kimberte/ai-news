@@ -1,60 +1,54 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getSupabaseClient } from '../lib/supabaseClient'
 import styles from './NewsList.module.css'
 
-export interface Article {
+type Article = {
   id: number
   title: string
-  description: string | null
-  content: string | null
-  source: string
+  description: string
   url: string
+  source: string
   published_at: string
-  category: string
-  country: string
 }
 
-interface Props {
+export default function NewsList({
+  category,
+  country,
+}: {
   category: string
   country: string
-}
-
-export default function NewsList({ category, country }: Props) {
+}) {
   const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchArticles = async () => {
+    async function load() {
       setLoading(true)
 
-      const supabase = getSupabaseClient()
+      const res = await fetch(
+        `/api/news?category=${category}&country=${country}`
+      )
+      const data = await res.json()
 
-      const { data } = await supabase
-        .from('news')
-        .select('*')
-        .eq('category', category)
-        .eq('country', country)
-        .order('published_at', { ascending: false })
-        .limit(20)
-
-      setArticles((data as Article[]) || [])
+      setArticles(data ?? [])
       setLoading(false)
     }
 
-    fetchArticles()
+    load()
   }, [category, country])
 
   if (loading) return <p>Loading news…</p>
 
   return (
     <div className={styles.list}>
-      {articles.map(article => (
-        <article key={article.id} className={styles.card}>
-          <h2>{article.title}</h2>
-          {article.description && <p>{article.description}</p>}
-          <a href={article.url} target="_blank">Read more →</a>
+      {articles.map((a) => (
+        <article key={a.id} className={styles.card}>
+          <h2>{a.title}</h2>
+          <p>{a.description}</p>
+          <a href={a.url} target="_blank" rel="noreferrer">
+            Read more →
+          </a>
         </article>
       ))}
     </div>
