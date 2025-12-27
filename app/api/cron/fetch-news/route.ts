@@ -1,21 +1,31 @@
-import { fetchNews } from '@/lib/fetchNews';
+// app/api/cron/fetch-news/route.ts
 
-export const runtime = 'nodejs';
+import { NextResponse } from 'next/server'
+import { fetchAndStoreNews } from '@/lib/fetchAndStoreNews'
 
-export async function GET() {
+export const runtime = 'nodejs'
+
+export async function GET(request: Request) {
   try {
-    await fetchNews();
+    // Optional security check
+    const authHeader = request.headers.get('authorization')
+    if (process.env.CRON_SECRET) {
+      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+    }
 
-    return Response.json({
+    const result = await fetchAndStoreNews()
+
+    return NextResponse.json({
       success: true,
-      message: 'News fetched successfully'
-    });
-  } catch (error: any) {
-    console.error('Cron fetch failed:', error);
-
-    return Response.json(
-      { error: error.message },
+      inserted: result.inserted,
+    })
+  } catch (error) {
+    console.error('Cron fetch failed:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch news' },
       { status: 500 }
-    );
+    )
   }
 }
