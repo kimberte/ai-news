@@ -1,14 +1,21 @@
 import { fetchNews } from '@/lib/fetchNews';
-import { runtime } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 
-export default async function handler(req: Request) {
+export async function GET() {
   try {
-    await fetchNews(); // fetchNews should handle storing data in Supabase
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    await fetchNews();
+
+    return Response.json({
+      success: true,
+      message: 'News fetched successfully'
+    });
   } catch (error: any) {
-    console.error('Error fetching news:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    console.error('Cron fetch failed:', error);
+
+    return Response.json(
+      { error: error.message },
+      { status: 500 }
+    );
   }
 }
