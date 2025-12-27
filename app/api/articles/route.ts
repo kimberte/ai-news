@@ -1,39 +1,38 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+// app/api/articles/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+export const runtime = 'nodejs';
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = req.url ? new URL(req.url) : {};
+    const category = searchParams?.get('category') || 'general';
+    const country = searchParams?.get('country') || 'us';
+    const page = Number(searchParams?.get('page')) || 1;
+    const limit = Number(searchParams?.get('limit')) || 20;
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
+    const from = (page - 1) * limit;
+    const to = page * limit - 1;
 
-  const category = searchParams.get('category')
-  const country = searchParams.get('country')
+    const { data, error } = await supabase
+      .from('news')
+      .select('*')
+      .eq('category', category)
+      .eq('country', country)
+      .order('published_at', { ascending: false })
+      .range(from, to);
 
-  let query = supabase
-    .from('news')
-    .select('*')
-    .order('published_at', { ascending: false })
-    .limit(20)
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      return NextResponse.json({ error: 'No articles found' }, { status: 404 });
+    }
 
-  if (category) {
-    query = query.eq('category', category)
-  }
-
-  if (country) {
-    query = query.eq('country', country)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
+    return NextResponse.json({ articles: data });
+  } catch (err: any) {
     return NextResponse.json(
-      { error: error.message },
+      { error: err.message || 'Unexpected error fetching articles' },
       { status: 500 }
-    )
+    );
   }
-
-  return NextResponse.json(data ?? [])
 }

@@ -1,67 +1,48 @@
 // app/api/cron/fetch-news/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
+import fetch from 'node-fetch';
 
-import { NextResponse } from 'next/server'
+export const runtime = 'nodejs';
 
-export const runtime = 'nodejs'
+const NEWS_API_URL = 'https://newsapi.org/v2/top-headlines';
+const NEWS_API_KEY = process.env.NEWS_API_KEY;
 
-type Article = {
-  title: string
-  description: string
-  url: string
-  source: string
-  published_at: string
-  category: string
-  country: string
-}
+export async function GET(req: NextRequest) {
+  try {
+    if (!NEWS_API_KEY) throw new Error('NEWS_API_KEY is not set');
 
-export async function GET() {
-  // 🔐 Prevent build-time crashes
-  if (
-    !process.env.NEWS_API_KEY ||
-    !process.env.SUPABASE_URL ||
-    !process.env.SUPABASE_SERVICE_ROLE_KEY
-  ) {
-    console.warn('Missing env vars — skipping fetch-news cron')
-    return NextResponse.json({ skipped: true })
+    // Fetch top headlines
+    const res = await fetch(`${NEWS_API_URL}?country=us&apiKey=${NEWS_API_KEY}`);
+    if (!res.ok) throw new Error(`News API responded with status ${res.status}`);
+
+    const data = await res.json();
+    if (!data.articles || !Array.isArray(data.articles)) {
+      throw new Error('No articles returned from News API');
+    }
+
+    // Transform to match your Supabase table
+    const articles = data.articles.map((article: any) => ({
+      title: article.title,
+      description: article.description,
+      content: article.content,
+      url: article.url,
+      url_to_image: article.urlToImage,
+      published_at: article.publishedAt,
+      source_name: article.source?.name,
+      category: 'general', // you can dynamically map categories later
+      country: 'us',
+    }));
+
+    // Upsert to avoid duplicates
+    const { error } = await supabase
+      .from('news')
+      .upsert(articles, { onConflict: ['title', 'published_at'] });
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, inserted: articles.length });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Failed to fetch news' }, { status: 500 });
   }
-
-  const newsApiUrl =
-    `https://newsapi.org/v2/top-headlines` +
-    `?country=us&category=general&pageSize=5&apiKey=${process.env.NEWS_API_KEY}`
-
-  const newsRes = await fetch(newsApiUrl)
-  const newsJson = await newsRes.json()
-
-  if (!newsJson.articles) {
-    return NextResponse.json({ error: 'No articles returned' }, { status: 500 })
-  }
-
-  const articles: Article[] = newsJson.articles.map((a: any) => ({
-    title: a.title,
-    description: a.description,
-    url: a.url,
-    source: a.source?.name ?? 'Unknown',
-    published_at: a.publishedAt,
-    category: 'general',
-    country: 'us',
-  }))
-
-  const supabaseRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/news`, {
-    method: 'POST',
-    headers: {
-      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-      'Content-Type': 'application/json',
-      Prefer: 'resolution=merge-duplicates',
-    },
-    body: JSON.stringify(articles),
-  })
-
-  if (!supabaseRes.ok) {
-    const text = await supabaseRes.text()
-    console.error(text)
-    return NextResponse.json({ error: 'Supabase insert failed' }, { status: 500 })
-  }
-
-  return NextResponse.json({ inserted: articles.length })
 }
