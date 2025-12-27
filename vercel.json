@@ -2,8 +2,7 @@
   "functions": {
     "app/api/cron/fetch-news/route.ts": {
       "runtime": "nodejs18.x",
-      "maxDuration": 10,
-      "schedule": "0 * * * *"
+      "maxDuration": 10
     }
   }
 }
