@@ -1,32 +1,29 @@
 // lib/fetchNews.ts
 
-export interface FetchNewsParams {
+export type FetchNewsParams = {
   category: string
   country: string
-  pageSize?: number
+  pageSize: number
 }
 
-export interface NewsArticle {
+export type NewsArticle = {
   title: string
   description: string
   url: string
-  urlToImage?: string
+  imageUrl?: string
   publishedAt: string
-  source: {
-    name: string
-  }
+  source: string
 }
 
 export async function fetchNews({
   category,
   country,
-  pageSize = 10,
+  pageSize,
 }: FetchNewsParams): Promise<NewsArticle[]> {
   const apiKey = process.env.NEWS_API_KEY
 
   if (!apiKey) {
-    console.warn('NEWS_API_KEY missing')
-    return []
+    throw new Error('NEWS_API_KEY is not set')
   }
 
   const url =
@@ -39,10 +36,17 @@ export async function fetchNews({
   const res = await fetch(url, { cache: 'no-store' })
 
   if (!res.ok) {
-    console.error('Failed to fetch news')
-    return []
+    throw new Error('Failed to fetch news')
   }
 
   const json = await res.json()
-  return json.articles ?? []
+
+  return (json.articles || []).map((a: any) => ({
+    title: a.title,
+    description: a.description,
+    url: a.url,
+    imageUrl: a.urlToImage,
+    publishedAt: a.publishedAt,
+    source: a.source?.name ?? 'Unknown',
+  }))
 }

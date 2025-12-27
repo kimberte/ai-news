@@ -16,29 +16,29 @@ export async function GET() {
     })
 
     if (!articles.length) {
-      return Response.json({ success: true, inserted: 0 })
+      return Response.json({ message: 'No articles found' })
     }
 
-    const formatted = articles.map((a) => ({
-      title: a.title,
-      description: a.description,
-      url: a.url,
-      image_url: a.urlToImage ?? null,
-      source: a.source.name,
-      published_at: a.publishedAt,
-      category: 'general',
-      country: 'us',
-    }))
+    const { error } = await supabase.from('news').insert(
+      articles.map((a) => ({
+        title: a.title,
+        description: a.description,
+        url: a.url,
+        image_url: a.imageUrl,
+        published_at: a.publishedAt,
+        source: a.source,
+      }))
+    )
 
-    const { error } = await supabase
-      .from('news')
-      .insert(formatted)
+    if (error) {
+      throw error
+    }
 
-    if (error) throw error
-
-    return Response.json({ success: true, inserted: formatted.length })
-  } catch (err) {
-    console.error(err)
-    return new Response('Cron failed', { status: 500 })
+    return Response.json({ success: true, count: articles.length })
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500 }
+    )
   }
 }
